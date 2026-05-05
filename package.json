@@ -2,9 +2,18 @@
   "name": "js-minify-compiler",
   "displayName": "JS Minify Compiler",
   "description": "Minifies JavaScript files and outputs .min.js files to a configurable directory.",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "publisher": "MMLTECH",
-  "homepage": "https://paypal.me/mmltools",
+  "homepage": "https://streamrsc.com",
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#f7df1e",
+    "theme": "dark"
+  },
+  "pricing": "Free",
+  "sponsor": {
+    "url": "https://paypal.me/mmltools"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -39,17 +48,22 @@
         "jsMinifyCompiler.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable automatic JavaScript minification on save."
+          "description": "Enable JS Minify Compiler."
+        },
+        "jsMinifyCompiler.minifyOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically minify JavaScript files when they are saved."
         },
         "jsMinifyCompiler.outputDirectory": {
           "type": "string",
           "default": "dist/js",
-          "description": "Directory where minified JavaScript files are saved. Relative paths are resolved from the workspace root."
+          "description": "Directory where minified JavaScript files are saved. Relative paths are resolved from the workspace root. Files are written directly into this folder."
         },
         "jsMinifyCompiler.include": {
           "type": "string",
           "default": "**/*.js",
-          "description": "Glob pattern for JavaScript files to minify."
+          "description": "Glob pattern for JavaScript files to minify when running workspace minification."
         },
         "jsMinifyCompiler.exclude": {
           "type": "array",
@@ -83,6 +97,7 @@
     }
   },
   "scripts": {
+    "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "package": "vsce package"
@@ -92,7 +107,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.19.39",
-    "@types/vscode": "^1.118.0",
+    "@types/vscode": "1.90.0",
     "typescript": "^5.0.0",
     "vsce": "^2.15.0"
   }

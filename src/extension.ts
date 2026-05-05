@@ -5,6 +5,7 @@ import { minify } from "terser";
 
 type ExtensionConfig = {
   enabled: boolean;
+  minifyOnSave: boolean;
   outputDirectory: string;
   include: string;
   exclude: string[];
@@ -13,12 +14,10 @@ type ExtensionConfig = {
   sourceMap: boolean;
 };
 
-let watcher: vscode.FileSystemWatcher | undefined;
 let outputChannel: vscode.OutputChannel;
 
 export function activate(context: vscode.ExtensionContext): void {
   outputChannel = vscode.window.createOutputChannel("JS Minify Compiler");
-
   context.subscriptions.push(outputChannel);
 
   context.subscriptions.push(
@@ -32,7 +31,7 @@ export function activate(context: vscode.ExtensionContext): void {
           return;
         }
 
-        await minifyFile(editor.document.uri);
+        await minifyFile(editor.document.uri, true);
       },
     ),
   );
@@ -46,19 +45,34 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
   );
 
-  registerWatcher(context);
-
   context.subscriptions.push(
-    vscode.workspace.onDidChangeConfiguration((event) => {
-      if (event.affectsConfiguration("jsMinifyCompiler")) {
-        registerWatcher(context);
+    vscode.workspace.onDidSaveTextDocument(async (document) => {
+      const config = getConfig();
+
+      if (!config.enabled || !config.minifyOnSave) {
+        return;
       }
+
+      if (document.uri.scheme !== "file") {
+        return;
+      }
+
+      if (
+        !document.fileName.endsWith(".js") ||
+        document.fileName.endsWith(".min.js")
+      ) {
+        return;
+      }
+
+      await minifyFile(document.uri, false);
     }),
   );
+
+  outputChannel.appendLine("JS Minify Compiler activated.");
 }
 
 export function deactivate(): void {
-  watcher?.dispose();
+  // Nothing to dispose manually. VS Code disposes subscriptions.
 }
 
 function getConfig(): ExtensionConfig {
@@ -66,6 +80,7 @@ function getConfig(): ExtensionConfig {
 
   return {
     enabled: cfg.get<boolean>("enabled", true),
+    minifyOnSave: cfg.get<boolean>("minifyOnSave", true),
     outputDirectory: cfg.get<string>("outputDirectory", "dist/js"),
     include: cfg.get<string>("include", "**/*.js"),
     exclude: cfg.get<string[]>("exclude", [
@@ -80,30 +95,16 @@ function getConfig(): ExtensionConfig {
   };
 }
 
-function registerWatcher(context: vscode.ExtensionContext): void {
-  watcher?.dispose();
-
+async function minifyWorkspace(): Promise<void> {
   const config = getConfig();
 
   if (!config.enabled) {
-    outputChannel.appendLine("Auto minification disabled.");
+    vscode.window.showInformationMessage("JS Minify Compiler is disabled.");
     return;
   }
 
-  watcher = vscode.workspace.createFileSystemWatcher(config.include);
-
-  watcher.onDidCreate((uri) => minifyFile(uri), null, context.subscriptions);
-  watcher.onDidChange((uri) => minifyFile(uri), null, context.subscriptions);
-
-  context.subscriptions.push(watcher);
-
-  outputChannel.appendLine(`Watching JavaScript files: ${config.include}`);
-}
-
-async function minifyWorkspace(): Promise<void> {
-  const config = getConfig();
-  const excludeGlob = `{${config.exclude.join(",")}}`;
-
+  const excludeGlob =
+    config.exclude.length > 0 ? `{${config.exclude.join(",")}}` : undefined;
   const files = await vscode.workspace.findFiles(config.include, excludeGlob);
 
   if (files.length === 0) {
@@ -117,7 +118,10 @@ async function minifyWorkspace(): Promise<void> {
 
   for (const file of files) {
     const ok = await minifyFile(file, false);
-    if (ok) success++;
+
+    if (ok) {
+      success++;
+    }
   }
 
   vscode.window.showInformationMessage(
@@ -184,11 +188,12 @@ async function minifyFile(
       workspaceFolder.uri.fsPath,
       config.outputDirectory,
     );
+
     await fs.mkdir(path.dirname(outputPath), { recursive: true });
     await fs.writeFile(outputPath, result.code, "utf8");
 
     if (config.sourceMap && result.map) {
-      const sourceMapContent =
+      const sourceMapContent: string =
         typeof result.map === "string"
           ? result.map
           : JSON.stringify(result.map);
@@ -208,8 +213,10 @@ async function minifyFile(
     return true;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+
     outputChannel.appendLine(`Error: ${message}`);
     vscode.window.showErrorMessage(`JS minification failed: ${message}`);
+
     return false;
   }
 }
@@ -219,18 +226,18 @@ function getOutputPath(
   workspaceRoot: string,
   outputDirectory: string,
 ): string {
-  const relativeSource = path.relative(workspaceRoot, sourcePath);
-  const parsed = path.parse(relativeSource);
+  const parsed = path.parse(sourcePath);
 
   const outputBase = path.isAbsolute(outputDirectory)
     ? outputDirectory
     : path.join(workspaceRoot, outputDirectory);
 
-  return path.join(outputBase, parsed.dir, `${parsed.name}.min.js`);
+  return path.join(outputBase, `${parsed.name}.min.js`);
 }
 
 function getMinifiedFileName(sourcePath: string): string {
   const parsed = path.parse(sourcePath);
+
   return `${parsed.name}.min.js`;
 }
 
@@ -240,6 +247,10 @@ function isExcluded(filePath: string, patterns: string[]): boolean {
   return patterns.some((pattern) => {
     const clean = pattern.replace(/\\/g, "/");
 
+    if (clean.includes("*.min.js") && normalized.endsWith(".min.js")) {
+      return true;
+    }
+
     if (
       clean.includes("node_modules") &&
       normalized.includes("/node_modules/")
@@ -247,15 +258,11 @@ function isExcluded(filePath: string, patterns: string[]): boolean {
       return true;
     }
 
-    if (clean.includes("dist") && normalized.includes("/dist/")) {
-      return true;
-    }
-
     if (clean.includes("vendor") && normalized.includes("/vendor/")) {
       return true;
     }
 
-    if (clean.includes("*.min.js") && normalized.endsWith(".min.js")) {
+    if (clean.includes("dist") && normalized.includes("/dist/")) {
       return true;
     }
 
