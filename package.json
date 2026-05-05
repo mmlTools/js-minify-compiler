@@ -6,6 +6,10 @@
   "publisher": "MMLTECH",
   "homepage": "https://paypal.me/mmltools",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mmlTools/js-minify-compiler"
+  },
   "engines": {
     "vscode": "^1.90.0"
   },

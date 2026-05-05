@@ -1,6 +1,3 @@
-Full README example:
-
-````md
 # JS Minify Compiler
 
 [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://paypal.me/mmltools)
@@ -36,4 +33,3 @@ Example `.vscode/settings.json`:
   "jsMinifyCompiler.sourceMap": false
 }
 ```
-````
