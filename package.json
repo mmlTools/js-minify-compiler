@@ -1,0 +1,95 @@
+{
+  "name": "js-minify-compiler",
+  "displayName": "JS Minify Compiler",
+  "description": "Minifies JavaScript files and outputs .min.js files to a configurable directory.",
+  "version": "1.0.0",
+  "publisher": "MMLTECH",
+  "homepage": "https://paypal.me/mmltools",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:jsMinifyCompiler.minifyCurrentFile",
+    "onCommand:jsMinifyCompiler.minifyWorkspace"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "jsMinifyCompiler.minifyCurrentFile",
+        "title": "JS Minify Compiler: Minify Current File"
+      },
+      {
+        "command": "jsMinifyCompiler.minifyWorkspace",
+        "title": "JS Minify Compiler: Minify Workspace"
+      }
+    ],
+    "configuration": {
+      "title": "JS Minify Compiler",
+      "properties": {
+        "jsMinifyCompiler.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic JavaScript minification on save."
+        },
+        "jsMinifyCompiler.outputDirectory": {
+          "type": "string",
+          "default": "dist/js",
+          "description": "Directory where minified JavaScript files are saved. Relative paths are resolved from the workspace root."
+        },
+        "jsMinifyCompiler.include": {
+          "type": "string",
+          "default": "**/*.js",
+          "description": "Glob pattern for JavaScript files to minify."
+        },
+        "jsMinifyCompiler.exclude": {
+          "type": "array",
+          "default": [
+            "**/*.min.js",
+            "**/node_modules/**",
+            "**/dist/**",
+            "**/vendor/**"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "Glob patterns excluded from minification."
+        },
+        "jsMinifyCompiler.mangle": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable variable and function name mangling."
+        },
+        "jsMinifyCompiler.compress": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable code compression."
+        },
+        "jsMinifyCompiler.sourceMap": {
+          "type": "boolean",
+          "default": false,
+          "description": "Generate source maps."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "terser": "^5.46.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.39",
+    "@types/vscode": "^1.118.0",
+    "typescript": "^5.0.0",
+    "vsce": "^2.15.0"
+  }
+}
