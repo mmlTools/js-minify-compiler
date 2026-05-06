@@ -2,7 +2,7 @@
   "name": "js-minify-compiler",
   "displayName": "JS Minify Compiler",
   "description": "Minifies JavaScript files and outputs .min.js files to a configurable directory.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publisher": "MMLTECH",
   "homepage": "https://streamrsc.com",
   "icon": "images/icon.png",
